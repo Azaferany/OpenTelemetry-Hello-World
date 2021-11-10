@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using System;
+using Serilog;
+using Serilog.Events;
 
 namespace OpenTelemetry
 {
@@ -12,7 +15,19 @@ namespace OpenTelemetry
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
-
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
+                .UseSerilog((webHost, config) =>
+                {
+                    config.Filter
+                        .ByExcluding(logEvent =>
+                            logEvent.Exception != null &&
+                            logEvent.Exception.GetType() == typeof(OperationCanceledException)
+                        );
+                    
+                    config.Enrich.FromLogContext().WriteTo.Console(LogEventLevel.Information);
+                    
+                    config.Enrich.FromLogContext()
+                        .WriteTo.Sentry(o => o.Dsn = webHost.Configuration["SentryDsn"]);
+                });
     }
 }
