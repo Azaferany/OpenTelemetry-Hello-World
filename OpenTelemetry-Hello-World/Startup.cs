@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Trace;
 
 namespace OpenTelemetry
 {
@@ -18,6 +19,14 @@ namespace OpenTelemetry
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddOpenTelemetryTracing(builder =>
+            {
+                builder.AddSource(nameof(WeatherForecastController));
+                builder.AddJaegerExporter();
+                builder.AddEntityFrameworkCoreInstrumentation();
+                builder.AddAspNetCoreInstrumentation();
+            });
+
             services.AddSwaggerGen();
             services.AddControllers();
         }
